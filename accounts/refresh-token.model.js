@@ -3,7 +3,7 @@ const { DataTypes } = require('sequelize');
 module.exports = model;
 
 function model(sequelize) {
-    const attributes = { 
+    const attributes = {
         token: { type: DataTypes.STRING },
         expires: { type: DataTypes.DATE },
         created: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
@@ -22,6 +22,7 @@ function model(sequelize) {
     };
 
     const options = {
+        // disable default timestamp fields (createdAt and updatedAt)
         timestamps: false
     };
 
