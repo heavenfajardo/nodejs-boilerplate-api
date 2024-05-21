@@ -1,28 +1,37 @@
-const config = require('config.json');
+const config = require('../config.json');
 const mysql = require('mysql2/promise');
-const { Sequelize } = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 
-module.exports = db = {};
+const db = {};
 
 initialize();
 
 async function initialize() {
-    // create db if it doesn't already exist
     const { host, port, user, password, database } = config.database;
+    
+    // Create the database if it doesn't exist
     const connection = await mysql.createConnection({ host, port, user, password });
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
 
-    // connect to db
+    // Connect to the database
     const sequelize = new Sequelize(database, user, password, { dialect: 'mysql' });
 
-    // init models and add them to the exported db object
-    db.Account = require('../accounts/account.model')(sequelize);
-    db.RefreshToken = require('../accounts/refresh-token.model')(sequelize);
+    // Define models
+    db.Account = require('../accounts/account.model')(sequelize, DataTypes);
+    db.RefreshToken = require('../accounts/refresh-token.model')(sequelize, DataTypes);
+    db.Order = require('../orders/order.model')(sequelize, DataTypes);
+    db.Product = require('../orders/product.model')(sequelize, DataTypes);
 
-    // define relationships
-    db.Account.hasMany(db.RefreshToken, { onDelete: 'CASCADE' });
-    db.RefreshToken.belongsTo(db.Account);
-    
-    // sync all models with database
+    // Define relationships
+    db.Order.belongsTo(db.Account, { foreignKey: 'userId' });
+    db.Order.belongsToMany(db.Product, { through: 'OrderProducts', foreignKey: 'orderId' });
+    db.Product.belongsToMany(db.Order, { through: 'OrderProducts', foreignKey: 'productId' });
+
+    // Sync all models with the database
     await sequelize.sync();
+
+    // Assign the sequelize instance to db object
+    db.sequelize = sequelize;
 }
+
+module.exports = db;
